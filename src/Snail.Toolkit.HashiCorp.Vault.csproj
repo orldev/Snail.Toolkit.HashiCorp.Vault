@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <PackageId>Snail.Toolkit.HashiCorp.Vault</PackageId>
+        <PackageTags>HashiCorp;Vault;Configuration;Secrets;AppRole</PackageTags>
+        <Title>Snail.Toolkit.HashiCorp.Vault</Title>
+        <Authors>Toolkit</Authors>
+        <Description>HashiCorp Vault KV v2 secrets as a .NET IConfiguration source: AppRole or token authentication, per-secret configuration sections, background reload.</Description>
+        <Copyright>Toolkit, 2023</Copyright>
+        <RepositoryType>GitHub</RepositoryType>
+        <RepositoryUrl>https://github.com/orldev/Snail.Toolkit.HashiCorp.Vault</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/orldev/Snail.Toolkit.HashiCorp.Vault</PackageProjectUrl>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Snail.Toolkit.HashiCorp.Vault.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.11" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.11" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.11" />
+      <PackageReference Include="Snail.Toolkit.HttpBuilder.Extensions" Version="0.1.0" />
+    </ItemGroup>
+
+</Project>
