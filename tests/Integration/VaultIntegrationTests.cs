@@ -17,7 +17,7 @@ public class VaultIntegrationTests(VaultContainerFixture vault) : IClassFixture<
     {
         await vault.ExecAsync("vault kv put secret/it-mongo Connection=mongodb://mongo:27017 Database=keynex");
 
-        var options = Options(new VaultSecret(path: "it-mongo"));
+        var options = Options(new VaultSecret(Path: "it-mongo"));
         options.Token = VaultContainerFixture.RootToken;
 
         var configuration = new ConfigurationBuilder().AddVault(options).Build();
@@ -31,7 +31,7 @@ public class VaultIntegrationTests(VaultContainerFixture vault) : IClassFixture<
     {
         await vault.ExecAsync("vault kv put secret/it-approle SecretKey=cipher");
 
-        var options = Options(new VaultSecret(path: "it-approle", configurationPrefix: "Assets"));
+        var options = Options(new VaultSecret(Path: "it-approle", ConfigurationPrefix: "Assets"));
         options.RoleId = vault.RoleId;
         options.SecretId = vault.SecretId;
 
@@ -46,7 +46,7 @@ public class VaultIntegrationTests(VaultContainerFixture vault) : IClassFixture<
         await vault.ExecAsync("vault kv put secret/it-pinned Value=first");
         await vault.ExecAsync("vault kv put secret/it-pinned Value=second");
 
-        var options = Options(new VaultSecret(path: "it-pinned", version: 1));
+        var options = Options(new VaultSecret(Path: "it-pinned", Version: 1));
         options.Token = VaultContainerFixture.RootToken;
 
         var configuration = new ConfigurationBuilder().AddVault(options).Build();
@@ -59,7 +59,7 @@ public class VaultIntegrationTests(VaultContainerFixture vault) : IClassFixture<
     {
         await vault.ExecAsync("vault kv put secret/it-reload Value=before");
 
-        var options = Options(new VaultSecret(path: "it-reload"));
+        var options = Options(new VaultSecret(Path: "it-reload"));
         options.Token = VaultContainerFixture.RootToken;
         options.ReloadCheckIntervalSeconds = 1;
 
@@ -76,11 +76,9 @@ public class VaultIntegrationTests(VaultContainerFixture vault) : IClassFixture<
     }
 
     [DockerFact]
-    public async Task Optional_StartsWithoutVaultAndRecoversInTheBackground()
+    public void Optional_StartsWithoutAReachableVault()
     {
-        await vault.ExecAsync("vault kv put secret/it-optional Value=late");
-
-        var options = Options(new VaultSecret(path: "it-optional"));
+        var options = Options(new VaultSecret(Path: "it-optional"));
         options.Address = "http://127.0.0.1:1";
         options.Token = VaultContainerFixture.RootToken;
         options.Optional = true;

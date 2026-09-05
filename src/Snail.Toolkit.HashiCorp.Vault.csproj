@@ -20,7 +20,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="..\README.md" Pack="true" PackagePath="\"/>
+        <None Include="..\README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 
     <ItemGroup>
@@ -30,9 +30,7 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.11" />
-      <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.11" />
-      <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.11" />
-      <PackageReference Include="Snail.Toolkit.HttpBuilder.Extensions" Version="0.1.0" />
+      <PackageReference Include="Snail.Toolkit.HttpBuilder.Extensions" Version="0.3.0" />
     </ItemGroup>
 
 </Project>

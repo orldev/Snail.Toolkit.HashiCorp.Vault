@@ -17,9 +17,19 @@ public static class ConfigurationBuilderExtensions
         }
 
         /// <summary>Adds Vault secrets to the configuration with ready options.</summary>
+        /// <remarks>
+        /// <see cref="VaultOptions.KeepExistingValues"/> decides where the source lands: ahead of every
+        /// other one so anything else overrides it, or last so Vault wins.
+        /// </remarks>
         public IConfigurationBuilder AddVault(VaultOptions options)
         {
-            configuration.Add(new VaultConfigurationSource(options, configuration.Build()));
+            var source = new VaultConfigurationSource(options);
+
+            if (options.KeepExistingValues)
+                configuration.Sources.Insert(0, source);
+            else
+                configuration.Sources.Add(source);
+
             return configuration;
         }
 
@@ -27,24 +37,13 @@ public static class ConfigurationBuilderExtensions
         public IConfigurationBuilder AddVault()
         {
             var root = configuration.Build();
-            var options = root.GetSection("Vault").Get<VaultOptions>()
-                ?? throw new InvalidOperationException("Vault: the 'Vault' configuration section is missing.");
+            var options = root.GetSection("Vault").Get<VaultOptions>();
 
-            configuration.Add(new VaultConfigurationSource(options, root));
-            return configuration;
-        }
+            if (!ReferenceEquals(root, configuration) && root is IDisposable snapshot)
+                snapshot.Dispose();
 
-        /// <summary>Adds appsettings, environment variables and Vault in one call — for builders that start from an empty configuration.</summary>
-        public IConfigurationBuilder AddVaultWithAppSettings()
-        {
-            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ??
-                Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
-
-            return configuration
-                .AddJsonFile("appsettings.json", optional: true)
-                .AddJsonFile($"appsettings.{env}.json", optional: true)
-                .AddEnvironmentVariables()
-                .AddVault();
+            return configuration.AddVault(options
+                ?? throw new InvalidOperationException("Vault: the 'Vault' configuration section is missing."));
         }
     }
 }

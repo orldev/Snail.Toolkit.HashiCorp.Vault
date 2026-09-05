@@ -28,6 +28,10 @@ jobs:
 
       - name: Test
         run: dotnet test -c Release --no-build
+        env:
+          # The runner has a Docker daemon, so the integration suite must run rather than skip:
+          # a release gate that passes by skipping every Vault test is not a gate.
+          VAULT_TESTS_REQUIRE_DOCKER: "1"
 
       - name: Get version from tag
         id: version
