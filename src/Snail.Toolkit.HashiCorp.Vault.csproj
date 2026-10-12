@@ -1,22 +1,19 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Snail.Sdk.Library">
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <PackageId>Snail.Toolkit.HashiCorp.Vault</PackageId>
         <PackageTags>HashiCorp;Vault;Configuration;Secrets;AppRole</PackageTags>
         <Title>Snail.Toolkit.HashiCorp.Vault</Title>
         <Authors>Toolkit</Authors>
         <Description>HashiCorp Vault KV v2 secrets as a .NET IConfiguration source: AppRole or token authentication, per-secret configuration sections, background reload.</Description>
         <Copyright>Toolkit, 2023</Copyright>
-        <RepositoryType>GitHub</RepositoryType>
         <RepositoryUrl>https://github.com/orldev/Snail.Toolkit.HashiCorp.Vault</RepositoryUrl>
         <PackageProjectUrl>https://github.com/orldev/Snail.Toolkit.HashiCorp.Vault</PackageProjectUrl>
-        <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+        <SnailNotNativeBecause>Snail.Toolkit.HttpBuilder.Extensions 0.3.0 reads every Vault answer through reflection-based JSON: in a native app the first read fails (reflection-based serialization is disabled) and the publish warns (IL2104, IL3053); native once a release of it takes JsonTypeInfo and the reads pass a source-generated context.</SnailNotNativeBecause>
     </PropertyGroup>
 
     <ItemGroup>
@@ -25,12 +22,13 @@
 
     <ItemGroup>
         <InternalsVisibleTo Include="Snail.Toolkit.HashiCorp.Vault.Tests" />
+        <InternalsVisibleTo Include="Snail.Toolkit.HashiCorp.Vault.Benchmarks" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
-      <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.11" />
-      <PackageReference Include="Snail.Toolkit.HttpBuilder.Extensions" Version="0.3.0" />
+      <PackageReference Include="Microsoft.Extensions.Configuration" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+      <PackageReference Include="Snail.Toolkit.HttpBuilder.Extensions" />
     </ItemGroup>
 
 </Project>

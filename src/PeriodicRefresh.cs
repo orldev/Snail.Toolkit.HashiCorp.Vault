@@ -41,14 +41,14 @@ internal sealed class PeriodicRefresh(TimeSpan interval, Func<CancellationToken,
     {
         while (!stopping.IsCancellationRequested)
         {
-            if (!await IdleAsync(stopping).ConfigureAwait(false))
+            if (!await TryWaitAsync(stopping).ConfigureAwait(false))
                 return;
 
             await work(stopping).ConfigureAwait(false);
         }
     }
 
-    private async Task<bool> IdleAsync(CancellationToken stopping)
+    private async Task<bool> TryWaitAsync(CancellationToken stopping)
     {
         try
         {

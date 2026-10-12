@@ -5,7 +5,7 @@ namespace Snail.Toolkit.HashiCorp.Vault.Tests;
 
 internal sealed class FakeVaultReader : IVaultReader
 {
-    private readonly Dictionary<string, Kv2Secret> _secrets = new();
+    private readonly Dictionary<string, Kv2Secret> _secrets = [];
     private int _attempts;
     private int _secretReads;
     private int _versionReads;
@@ -43,6 +43,7 @@ internal sealed class FakeVaultReader : IVaultReader
             throw failure;
 
         Interlocked.Increment(ref _secretReads);
+
         return _secrets[secret.Path!];
     }
 
@@ -54,6 +55,7 @@ internal sealed class FakeVaultReader : IVaultReader
             throw VersionFailure;
 
         Interlocked.Increment(ref _versionReads);
+
         return _secrets[secret.Path!].Version;
     }
 

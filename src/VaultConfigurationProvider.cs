@@ -1,5 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.Configuration;
 using Snail.Toolkit.HashiCorp.Vault.Http;
 
@@ -19,6 +19,7 @@ public sealed class VaultConfigurationProvider : ConfigurationProvider, IDisposa
     /// <remarks>
     /// SemaphoreSlim only needs disposing once AvailableWaitHandle has been touched, and it never is here.
     /// </remarks>
+    [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "A Dispose racing a load in flight would make its Release throw; the wait handle is never created.")]
     private readonly SemaphoreSlim _loading = new(1, 1);
     private PeriodicRefresh? _refresh;
     private Dictionary<string, int> _versions = new(StringComparer.Ordinal);
@@ -37,6 +38,11 @@ public sealed class VaultConfigurationProvider : ConfigurationProvider, IDisposa
     }
 
     /// <summary>Loads every configured secret within the time budget.</summary>
+    /// <remarks>
+    /// The configuration system calls this synchronously, at start-up and before anything could await it, so the
+    /// asynchronous load is waited for here.
+    /// </remarks>
+    [SuppressMessage("Usage", "VSTHRD002:Avoid problematic synchronous waits", Justification = "IConfigurationProvider.Load is synchronous by contract.")]
     public override void Load()
     {
         var timeout = TimeSpan.FromSeconds(_options.LoadTimeoutSeconds ?? DefaultLoadTimeoutSeconds);

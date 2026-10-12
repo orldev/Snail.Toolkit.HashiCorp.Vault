@@ -31,7 +31,7 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
     public async Task<Kv2Secret> ReadSecretAsync(VaultSecret secret, CancellationToken cancellationToken = default)
     {
         var (mountPath, path) = Locate(secret);
-        var response = await SendAuthorizedAsync(
+        var response = await SendAuthorizedAsync<JsonNode>(
             () => Get($"v1/{mountPath}/data/{path}")
                 .Query("version", secret.Version?.ToString(CultureInfo.InvariantCulture)),
             secret.Path!, cancellationToken).ConfigureAwait(false);
@@ -44,14 +44,18 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// Read into a record of the one field it needs, not into a tree of the whole answer with its
+    /// version history: the probe runs for every secret on every reload interval.
+    /// </remarks>
     public async Task<int?> ReadSecretVersionAsync(VaultSecret secret, CancellationToken cancellationToken = default)
     {
         var (mountPath, path) = Locate(secret);
-        var response = await SendAuthorizedAsync(
-            () => Get($"v1/{mountPath}/metadata/{path}"),
+        var response = await SendAuthorizedAsync<MetadataAnswer>(
+            () => Get($"v1/{mountPath}/metadata/{path}").WithJsonOptions(VaultJson.Default.Options),
             secret.Path!, cancellationToken).ConfigureAwait(false);
 
-        return response?["data"]?["current_version"]?.GetValue<int>();
+        return response?.Metadata?.CurrentVersion;
     }
 
     /// <inheritdoc/>
@@ -89,24 +93,27 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
         if (Array.Exists(segments, segment => segment is "." or ".."))
             throw new InvalidOperationException($"Vault: the path '{path}' walks outside its mount.");
 
-        return string.Join('/', segments.Select(Uri.EscapeDataString));
+        for (var index = 0; index < segments.Length; index++)
+            segments[index] = Uri.EscapeDataString(segments[index]);
+
+        return string.Join('/', segments);
     }
 
-    private async Task<JsonNode?> SendAuthorizedAsync(
+    private async Task<T?> SendAuthorizedAsync<T>(
         Func<IHttpRequestBuilder> request, string path, CancellationToken cancellationToken)
     {
         var token = await GetTokenAsync(stale: null, cancellationToken).ConfigureAwait(false);
 
         try
         {
-            return await ReadAsync(request, token, path, cancellationToken).ConfigureAwait(false);
+            return await ReadAsync<T>(request, token, path, cancellationToken).ConfigureAwait(false);
         }
         catch (HttpBuilderException ex) when (
             ex.StatusCode == HttpStatusCode.Forbidden && string.IsNullOrEmpty(_options.Token))
         {
             var renewed = await GetTokenAsync(token, cancellationToken).ConfigureAwait(false);
 
-            return await ReadAsync(request, renewed, path, cancellationToken).ConfigureAwait(false);
+            return await ReadAsync<T>(request, renewed, path, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -115,13 +122,13 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
     /// The mapping covers the read alone. A login that answers 404 — an AppRole backend that is not
     /// mounted — would otherwise be reported as a missing secret and hide the real fault.
     /// </remarks>
-    private async Task<JsonNode?> ReadAsync(
+    private static async Task<T?> ReadAsync<T>(
         Func<IHttpRequestBuilder> request, string token, string path, CancellationToken cancellationToken)
     {
         try
         {
             return await request().Header(TokenHeader, token)
-                .SendAsync<JsonNode>(cancellationToken).ConfigureAwait(false);
+                .SendAsync<T>(cancellationToken).ConfigureAwait(false);
         }
         catch (HttpBuilderException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
@@ -203,6 +210,7 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
         options.ConfigureTransport?.Invoke(handler);
 
         var address = options.Address.EndsWith('/') ? options.Address : $"{options.Address}/";
+
         return new HttpClient(handler) { BaseAddress = new Uri(address) };
     }
 }

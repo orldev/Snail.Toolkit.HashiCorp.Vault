@@ -1,0 +1,95 @@
+#nullable enable
+Snail.Toolkit.HashiCorp.Vault.ConfigurationBuilderExtensions
+Snail.Toolkit.HashiCorp.Vault.ConfigurationBuilderExtensions.extension(Microsoft.Extensions.Configuration.IConfigurationBuilder!)
+Snail.Toolkit.HashiCorp.Vault.ConfigurationBuilderExtensions.extension(Microsoft.Extensions.Configuration.IConfigurationBuilder!).AddVault() -> Microsoft.Extensions.Configuration.IConfigurationBuilder!
+Snail.Toolkit.HashiCorp.Vault.ConfigurationBuilderExtensions.extension(Microsoft.Extensions.Configuration.IConfigurationBuilder!).AddVault(Snail.Toolkit.HashiCorp.Vault.VaultOptions! options) -> Microsoft.Extensions.Configuration.IConfigurationBuilder!
+Snail.Toolkit.HashiCorp.Vault.ConfigurationBuilderExtensions.extension(Microsoft.Extensions.Configuration.IConfigurationBuilder!).AddVault(System.Action<Snail.Toolkit.HashiCorp.Vault.VaultOptions!>! options) -> Microsoft.Extensions.Configuration.IConfigurationBuilder!
+Snail.Toolkit.HashiCorp.Vault.Http.IVaultReader
+Snail.Toolkit.HashiCorp.Vault.Http.IVaultReader.ReadSecretAsync(Snail.Toolkit.HashiCorp.Vault.VaultSecret! secret, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret!>!
+Snail.Toolkit.HashiCorp.Vault.Http.IVaultReader.ReadSecretVersionAsync(Snail.Toolkit.HashiCorp.Vault.VaultSecret! secret, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int?>!
+Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret
+Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret.<Clone>$() -> Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret!
+Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret.Data.get -> System.Text.Json.Nodes.JsonObject!
+Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret.Data.init -> void
+Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret.Deconstruct(out System.Text.Json.Nodes.JsonObject! Data, out int? Version) -> void
+Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret.Equals(Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret? other) -> bool
+Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret.Kv2Secret(System.Text.Json.Nodes.JsonObject! Data, int? Version) -> void
+Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret.Version.get -> int?
+Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret.Version.init -> void
+Snail.Toolkit.HashiCorp.Vault.Http.VaultHttpClient
+Snail.Toolkit.HashiCorp.Vault.Http.VaultHttpClient.Dispose() -> void
+Snail.Toolkit.HashiCorp.Vault.Http.VaultHttpClient.ReadSecretAsync(Snail.Toolkit.HashiCorp.Vault.VaultSecret! secret, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret!>!
+Snail.Toolkit.HashiCorp.Vault.Http.VaultHttpClient.ReadSecretVersionAsync(Snail.Toolkit.HashiCorp.Vault.VaultSecret! secret, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int?>!
+Snail.Toolkit.HashiCorp.Vault.Http.VaultHttpClient.VaultHttpClient(Snail.Toolkit.HashiCorp.Vault.VaultOptions! options) -> void
+Snail.Toolkit.HashiCorp.Vault.Http.VaultHttpClient.VaultHttpClient(Snail.Toolkit.HashiCorp.Vault.VaultOptions! options, System.Net.Http.HttpClient! httpClient) -> void
+Snail.Toolkit.HashiCorp.Vault.SecretNotFoundException
+Snail.Toolkit.HashiCorp.Vault.SecretNotFoundException.Path.get -> string?
+Snail.Toolkit.HashiCorp.Vault.SecretNotFoundException.SecretNotFoundException(string? path, System.Exception? innerException = null) -> void
+Snail.Toolkit.HashiCorp.Vault.VaultConfigurationProvider
+Snail.Toolkit.HashiCorp.Vault.VaultConfigurationProvider.Dispose() -> void
+Snail.Toolkit.HashiCorp.Vault.VaultConfigurationProvider.VaultConfigurationProvider(Snail.Toolkit.HashiCorp.Vault.VaultOptions! options, Snail.Toolkit.HashiCorp.Vault.Http.IVaultReader? reader = null) -> void
+Snail.Toolkit.HashiCorp.Vault.VaultConfigurationSource
+Snail.Toolkit.HashiCorp.Vault.VaultConfigurationSource.Build(Microsoft.Extensions.Configuration.IConfigurationBuilder! builder) -> Microsoft.Extensions.Configuration.IConfigurationProvider!
+Snail.Toolkit.HashiCorp.Vault.VaultConfigurationSource.VaultConfigurationSource(Snail.Toolkit.HashiCorp.Vault.VaultOptions! options, Snail.Toolkit.HashiCorp.Vault.Http.IVaultReader? reader = null) -> void
+Snail.Toolkit.HashiCorp.Vault.VaultConfigurationSource.VaultConfigurationSource(System.Action<Snail.Toolkit.HashiCorp.Vault.VaultOptions!>! options) -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.Address.get -> string?
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.Address.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.ConfigureTransport.get -> System.Action<System.Net.Http.SocketsHttpHandler!>?
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.ConfigureTransport.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.ConnectionLifetimeSeconds.get -> int
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.ConnectionLifetimeSeconds.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.ExpandJsonValues.get -> bool
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.ExpandJsonValues.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.KeepExistingValues.get -> bool
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.KeepExistingValues.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.LoadTimeoutSeconds.get -> int?
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.LoadTimeoutSeconds.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.Logger.get -> System.Action<string!, System.Exception?>?
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.Logger.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.MountPath.get -> string?
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.MountPath.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.Optional.get -> bool
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.Optional.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.ReconnectIntervalSeconds.get -> int?
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.ReconnectIntervalSeconds.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.ReloadCheckIntervalSeconds.get -> int?
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.ReloadCheckIntervalSeconds.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.RoleId.get -> string?
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.RoleId.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.SecretId.get -> string?
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.SecretId.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.Secrets.get -> Snail.Toolkit.HashiCorp.Vault.VaultSecret![]?
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.Secrets.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.Token.get -> string?
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.Token.set -> void
+Snail.Toolkit.HashiCorp.Vault.VaultOptions.VaultOptions() -> void
+Snail.Toolkit.HashiCorp.Vault.VaultSecret
+Snail.Toolkit.HashiCorp.Vault.VaultSecret.<Clone>$() -> Snail.Toolkit.HashiCorp.Vault.VaultSecret!
+Snail.Toolkit.HashiCorp.Vault.VaultSecret.ConfigurationPrefix.get -> string?
+Snail.Toolkit.HashiCorp.Vault.VaultSecret.ConfigurationPrefix.init -> void
+Snail.Toolkit.HashiCorp.Vault.VaultSecret.Deconstruct(out string? Path, out System.Collections.Generic.IReadOnlyList<string!>? Keys, out string? MountPath, out int? Version, out string? ConfigurationPrefix) -> void
+Snail.Toolkit.HashiCorp.Vault.VaultSecret.Equals(Snail.Toolkit.HashiCorp.Vault.VaultSecret? other) -> bool
+Snail.Toolkit.HashiCorp.Vault.VaultSecret.Keys.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Snail.Toolkit.HashiCorp.Vault.VaultSecret.Keys.init -> void
+Snail.Toolkit.HashiCorp.Vault.VaultSecret.MountPath.get -> string?
+Snail.Toolkit.HashiCorp.Vault.VaultSecret.MountPath.init -> void
+Snail.Toolkit.HashiCorp.Vault.VaultSecret.Path.get -> string?
+Snail.Toolkit.HashiCorp.Vault.VaultSecret.Path.init -> void
+Snail.Toolkit.HashiCorp.Vault.VaultSecret.VaultSecret(string? Path = null, System.Collections.Generic.IReadOnlyList<string!>? Keys = null, string? MountPath = null, int? Version = null, string? ConfigurationPrefix = null) -> void
+Snail.Toolkit.HashiCorp.Vault.VaultSecret.Version.get -> int?
+Snail.Toolkit.HashiCorp.Vault.VaultSecret.Version.init -> void
+override Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret.Equals(object? obj) -> bool
+override Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret.GetHashCode() -> int
+override Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret.ToString() -> string!
+override Snail.Toolkit.HashiCorp.Vault.VaultConfigurationProvider.Load() -> void
+override Snail.Toolkit.HashiCorp.Vault.VaultSecret.Equals(object? obj) -> bool
+override Snail.Toolkit.HashiCorp.Vault.VaultSecret.GetHashCode() -> int
+override Snail.Toolkit.HashiCorp.Vault.VaultSecret.ToString() -> string!
+static Snail.Toolkit.HashiCorp.Vault.ConfigurationBuilderExtensions.AddVault(this Microsoft.Extensions.Configuration.IConfigurationBuilder! configuration) -> Microsoft.Extensions.Configuration.IConfigurationBuilder!
+static Snail.Toolkit.HashiCorp.Vault.ConfigurationBuilderExtensions.AddVault(this Microsoft.Extensions.Configuration.IConfigurationBuilder! configuration, Snail.Toolkit.HashiCorp.Vault.VaultOptions! options) -> Microsoft.Extensions.Configuration.IConfigurationBuilder!
+static Snail.Toolkit.HashiCorp.Vault.ConfigurationBuilderExtensions.AddVault(this Microsoft.Extensions.Configuration.IConfigurationBuilder! configuration, System.Action<Snail.Toolkit.HashiCorp.Vault.VaultOptions!>! options) -> Microsoft.Extensions.Configuration.IConfigurationBuilder!
+static Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret.operator !=(Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret? left, Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret? right) -> bool
+static Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret.operator ==(Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret? left, Snail.Toolkit.HashiCorp.Vault.Http.Kv2Secret? right) -> bool
+static Snail.Toolkit.HashiCorp.Vault.VaultSecret.operator !=(Snail.Toolkit.HashiCorp.Vault.VaultSecret? left, Snail.Toolkit.HashiCorp.Vault.VaultSecret? right) -> bool
+static Snail.Toolkit.HashiCorp.Vault.VaultSecret.operator ==(Snail.Toolkit.HashiCorp.Vault.VaultSecret? left, Snail.Toolkit.HashiCorp.Vault.VaultSecret? right) -> bool

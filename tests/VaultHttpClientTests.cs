@@ -24,6 +24,7 @@ public class VaultHttpClientTests
         options.Token = null;
         options.RoleId = "role";
         options.SecretId = "secret";
+
         return options;
     }
 
@@ -177,6 +178,36 @@ public class VaultHttpClientTests
 
         Assert.Equal(4, version);
         Assert.Equal("/v1/secret/metadata/mongo", Assert.Single(handler.Requests).AbsolutePath);
+    }
+
+    /// <summary>The metadata answer read as it was when it was a tree: names in any case, gaps as no version.</summary>
+    [Theory]
+    [InlineData("""{"data": {"current_version": 4, "versions": {"4": {"destroyed": false}}}}""", 4)]
+    [InlineData("""{"Data": {"Current_Version": 5}}""", 5)]
+    [InlineData("""{"data": {"current_version": null}}""", null)]
+    [InlineData("""{"data": {}}""", null)]
+    [InlineData("""{"data": null}""", null)]
+    [InlineData("""{}""", null)]
+    [InlineData("", null)]
+    public async Task ReadSecretVersion_AnyShapeOfAnswer_ReadsTheVersionOrNone(string body, int? expected)
+    {
+        using var client = Client(new RecordingHandler(body: body));
+
+        var version = await client.ReadSecretVersionAsync(new VaultSecret(Path: "mongo"));
+
+        Assert.Equal(expected, version);
+    }
+
+    /// <summary>A version that is not a number is a failure, which the reload turns into a full read.</summary>
+    [Theory]
+    [InlineData("""{"data": {"current_version": "4"}}""")]
+    [InlineData("""{"data": {"current_version": 4.5}}""")]
+    [InlineData("""{"data": []}""")]
+    public async Task ReadSecretVersion_VersionThatIsNotAnInteger_Fails(string body)
+    {
+        using var client = Client(new RecordingHandler(body: body));
+
+        await Assert.ThrowsAnyAsync<Exception>(() => client.ReadSecretVersionAsync(new VaultSecret(Path: "mongo")));
     }
 
     /// <summary>A Vault where the AppRole backend is not mounted, so the login itself answers 404.</summary>

@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Text;
-using Microsoft.Extensions.Configuration;
 
 namespace Snail.Toolkit.HashiCorp.Vault.Tests;
 
