@@ -1,4 +1,5 @@
 global using Xunit;
+using Snail.Toolkit.HashiCorp.Vault.Http;
 
 namespace Snail.Toolkit.HashiCorp.Vault.Tests;
 
@@ -153,6 +154,29 @@ public class VaultConfigurationProviderTests
         using var provider = new VaultConfigurationProvider(options, reader);
 
         Assert.Throws<SecretNotFoundException>(provider.Load);
+    }
+
+    /// <summary>
+    /// An answer of the wrong shape is the configuration's fault, not Vault being away, so Optional does not
+    /// hide it; a body that is not JSON at all is skipped, as it always was.
+    /// </summary>
+    [Theory]
+    [InlineData("""{"data": []}""", true)]
+    [InlineData("""{"data": {"data": {"a": "1"}, "metadata": {"version": "7"}}}""", true)]
+    [InlineData("<html>", false)]
+    public void Load_OptionalSourceAndAMalformedAnswer_FailsOnlyOnTheWrongShape(string body, bool isFailing)
+    {
+        var options = Options(new VaultSecret(Path: "mongo"));
+        options.Token = "root";
+        options.Optional = true;
+        using var reader = new VaultHttpClient(
+            options, new HttpClient(new RecordingHandler(body: body)) { BaseAddress = new Uri("http://vault.local:8200/") });
+        using var provider = new VaultConfigurationProvider(options, reader);
+
+        var error = Record.Exception(provider.Load);
+
+        Assert.Equal(isFailing, error is InvalidOperationException);
+        Assert.Equal(isFailing, error is not null);
     }
 
     [Fact]

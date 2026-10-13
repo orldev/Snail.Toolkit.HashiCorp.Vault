@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="benchmarks/Snail.Toolkit.HashiCorp.Vault.Benchmarks/Snail.Toolkit.HashiCorp.Vault.Benchmarks.csproj" />
   <Project Path="src/Snail.Toolkit.HashiCorp.Vault.csproj" />
+  <Project Path="tests/Snail.Toolkit.HashiCorp.Vault.NativeProbe/Snail.Toolkit.HashiCorp.Vault.NativeProbe.csproj" />
   <Project Path="tests/Snail.Toolkit.HashiCorp.Vault.Tests.csproj" />
 </Solution>

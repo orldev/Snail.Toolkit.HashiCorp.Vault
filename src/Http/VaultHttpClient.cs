@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using Snail.Toolkit.HttpBuilder.Extensions;
 
 namespace Snail.Toolkit.HashiCorp.Vault.Http;
@@ -31,16 +32,15 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
     public async Task<Kv2Secret> ReadSecretAsync(VaultSecret secret, CancellationToken cancellationToken = default)
     {
         var (mountPath, path) = Locate(secret);
-        var response = await SendAuthorizedAsync<JsonNode>(
+        var answer = await SendAuthorizedAsync(
             () => Get($"v1/{mountPath}/data/{path}")
                 .Query("version", secret.Version?.ToString(CultureInfo.InvariantCulture)),
-            secret.Path!, cancellationToken).ConfigureAwait(false);
+            VaultAnswers.Secret, secret.Path!, cancellationToken).ConfigureAwait(false);
 
-        var data = response?["data"];
-        if (data?["data"] is not JsonObject payload)
+        if (answer?.Content is not { Data: JsonObject payload } content)
             throw new InvalidOperationException($"Vault: the response for the secret '{path}' carries no data.");
 
-        return new Kv2Secret(payload, data["metadata"]?["version"]?.GetValue<int>());
+        return new Kv2Secret(payload, content.Metadata?.Version);
     }
 
     /// <inheritdoc/>
@@ -51,9 +51,9 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
     public async Task<int?> ReadSecretVersionAsync(VaultSecret secret, CancellationToken cancellationToken = default)
     {
         var (mountPath, path) = Locate(secret);
-        var response = await SendAuthorizedAsync<MetadataAnswer>(
-            () => Get($"v1/{mountPath}/metadata/{path}").WithJsonOptions(VaultJson.Default.Options),
-            secret.Path!, cancellationToken).ConfigureAwait(false);
+        var response = await SendAuthorizedAsync(
+            () => Get($"v1/{mountPath}/metadata/{path}"),
+            VaultJson.Default.MetadataAnswer, secret.Path!, cancellationToken).ConfigureAwait(false);
 
         return response?.Metadata?.CurrentVersion;
     }
@@ -100,20 +100,20 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
     }
 
     private async Task<T?> SendAuthorizedAsync<T>(
-        Func<IHttpRequestBuilder> request, string path, CancellationToken cancellationToken)
+        Func<IHttpRequestBuilder> request, JsonTypeInfo<T> answer, string path, CancellationToken cancellationToken)
     {
         var token = await GetTokenAsync(stale: null, cancellationToken).ConfigureAwait(false);
 
         try
         {
-            return await ReadAsync<T>(request, token, path, cancellationToken).ConfigureAwait(false);
+            return await ReadAsync(request, answer, token, path, cancellationToken).ConfigureAwait(false);
         }
         catch (HttpBuilderException ex) when (
             ex.StatusCode == HttpStatusCode.Forbidden && string.IsNullOrEmpty(_options.Token))
         {
             var renewed = await GetTokenAsync(token, cancellationToken).ConfigureAwait(false);
 
-            return await ReadAsync<T>(request, renewed, path, cancellationToken).ConfigureAwait(false);
+            return await ReadAsync(request, answer, renewed, path, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -123,12 +123,13 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
     /// mounted — would otherwise be reported as a missing secret and hide the real fault.
     /// </remarks>
     private static async Task<T?> ReadAsync<T>(
-        Func<IHttpRequestBuilder> request, string token, string path, CancellationToken cancellationToken)
+        Func<IHttpRequestBuilder> request, JsonTypeInfo<T> answer, string token, string path,
+        CancellationToken cancellationToken)
     {
         try
         {
             return await request().Header(TokenHeader, token)
-                .SendAsync<T>(cancellationToken).ConfigureAwait(false);
+                .SendAsync(answer, cancellationToken).ConfigureAwait(false);
         }
         catch (HttpBuilderException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
@@ -168,19 +169,21 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
 
     private async Task<Lease> LoginAsync(CancellationToken cancellationToken)
     {
-        var response = await Post("v1/auth/approle/login")
-            .AsJson(new Dictionary<string, string?>
-            {
-                ["role_id"] = _options.RoleId,
-                ["secret_id"] = _options.SecretId,
-            })
-            .SendAsync<JsonNode>(cancellationToken).ConfigureAwait(false);
+        var credentials = new Dictionary<string, string?>
+        {
+            ["role_id"] = _options.RoleId,
+            ["secret_id"] = _options.SecretId,
+        };
 
-        var auth = response?["auth"];
-        var token = auth?["client_token"]?.GetValue<string>()
+        var answer = await Post("v1/auth/approle/login")
+            .AsJson(credentials, VaultJson.Default.DictionaryStringString)
+            .SendAsync(VaultAnswers.Login, cancellationToken).ConfigureAwait(false);
+
+        var grant = answer?.Auth;
+        var token = grant?.ClientToken
             ?? throw new InvalidOperationException("Vault: the AppRole login response carries no client token.");
 
-        return new Lease(token, Expiry(auth?["lease_duration"]?.GetValue<int>() ?? 0));
+        return new Lease(token, Expiry(grant.LeaseDuration ?? 0));
     }
 
     /// <summary>When to stop using a token — a little before Vault stops accepting it.</summary>

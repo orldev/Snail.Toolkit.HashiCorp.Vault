@@ -13,7 +13,6 @@
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
-        <SnailNotNativeBecause>Snail.Toolkit.HttpBuilder.Extensions 0.3.0 reads every Vault answer through reflection-based JSON: in a native app the first read fails (reflection-based serialization is disabled) and the publish warns (IL2104, IL3053); native once a release of it takes JsonTypeInfo and the reads pass a source-generated context.</SnailNotNativeBecause>
     </PropertyGroup>
 
     <ItemGroup>
