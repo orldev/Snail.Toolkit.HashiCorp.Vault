@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Snail.Toolkit.HashiCorp.Vault.Tests;
 
@@ -24,8 +25,10 @@ public class CrashTests
         return provider;
     }
 
-    // A secret key that itself contains the configuration separator would land as a section boundary
-    // and shadow a key mapped from a real nested object. The load has to refuse instead.
+    /// <summary>
+    /// A secret key that itself contains the configuration separator would land as a section boundary
+    /// and shadow a key mapped from a real nested object. The load has to refuse instead.
+    /// </summary>
     [Fact]
     public void Load_KeyCarryingTheSeparatorIsRefused()
     {
@@ -38,8 +41,10 @@ public class CrashTests
         Assert.Contains("app:Nested:Inner", error.Message, StringComparison.Ordinal);
     }
 
-    // Vault allows two keys differing only in case; configuration keys are case-insensitive, so one of
-    // them would disappear without a word.
+    /// <summary>
+    /// Vault allows two keys differing only in case; configuration keys are case-insensitive, so one of
+    /// them would disappear without a word.
+    /// </summary>
     [Fact]
     public void Load_KeysDifferingOnlyInCaseAreRefused()
     {
@@ -53,7 +58,9 @@ public class CrashTests
         Assert.Contains("TOKEN", error.Message, StringComparison.Ordinal);
     }
 
-    // Emoji, an escaped NUL, a tab and a very long value all have to reach the application unchanged.
+    /// <summary>
+    /// Emoji, an escaped NUL, a tab and a very long value all have to reach the application unchanged.
+    /// </summary>
     [Fact]
     public void Load_HostileTextSurvivesUnchanged()
     {
@@ -71,8 +78,10 @@ public class CrashTests
         Assert.Equal(1_000_000, value!.Length);
     }
 
-    // The flattener recurses per level. A value carrying a document nested deeper than the parser allows
-    // must not reach it as a parsed tree, or the recursion overflows the stack and kills the process.
+    /// <summary>
+    /// The flattener recurses per level. A value carrying a document nested deeper than the parser allows
+    /// must not reach it as a parsed tree, or the recursion overflows the stack and kills the process.
+    /// </summary>
     [Fact]
     public void Load_ValueNestedDeeperThanTheParserAllowsStaysText()
     {
@@ -86,7 +95,9 @@ public class CrashTests
         Assert.Equal(deep, value);
     }
 
-    // A secret holding a large array turns into one configuration entry per element.
+    /// <summary>
+    /// A secret holding a large array turns into one configuration entry per element.
+    /// </summary>
     [Fact]
     public void Load_LargeArrayDoesNotDegradeIntoSomethingWorseThanItsSize()
     {
@@ -99,7 +110,9 @@ public class CrashTests
         Assert.Equal("v49999", last);
     }
 
-    // Readers hammering TryGet while the background swaps Data must never see a torn or absent value.
+    /// <summary>
+    /// Readers hammering TryGet while the background swaps Data must never see a torn or absent value.
+    /// </summary>
     [Fact]
     public async Task Reload_ConcurrentReadersNeverSeeAMissingKey()
     {
@@ -130,7 +143,9 @@ public class CrashTests
         Assert.Empty(failures);
     }
 
-    // Many requests arriving together on an expired lease must produce one login, not one each.
+    /// <summary>
+    /// Many requests arriving together on an expired lease must produce one login, not one each.
+    /// </summary>
     [Fact]
     public async Task Login_FiftyConcurrentReadsShareASingleRenewal()
     {
@@ -148,8 +163,10 @@ public class CrashTests
         Assert.Equal(1, handler.Logins);
     }
 
-    // One secret failing halfway through must leave the previously loaded values alone rather than
-    // publishing a half-built configuration.
+    /// <summary>
+    /// One secret failing halfway through must leave the previously loaded values alone rather than
+    /// publishing a half-built configuration.
+    /// </summary>
     [Fact]
     public async Task Reload_FailureOnTheSecondSecretKeepsTheOldValues()
     {
@@ -170,7 +187,9 @@ public class CrashTests
         Assert.Equal("two", second);
     }
 
-    // A dependency deaf to cancellation must not hold shutdown open indefinitely.
+    /// <summary>
+    /// A dependency deaf to cancellation must not hold shutdown open indefinitely.
+    /// </summary>
     [Fact]
     public void Dispose_ReaderThatIgnoresCancellationStillLetsShutdownFinish()
     {
@@ -190,7 +209,9 @@ public class CrashTests
         Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(8), $"Dispose took {elapsed.Elapsed}");
     }
 
-    // Disposing while the first load is still running must not leave a refresh loop behind it.
+    /// <summary>
+    /// Disposing while the first load is still running must not leave a refresh loop behind it.
+    /// </summary>
     [Fact]
     public async Task Dispose_RacingTheFirstLoadLeavesNoRefreshBehind()
     {
@@ -198,8 +219,9 @@ public class CrashTests
             .Set("mongo", 1, """{"Connection": "a"}""");
         var options = Options(new VaultSecret(Path: "mongo"));
         options.ReloadCheckIntervalSeconds = 1;
+        var time = new FakeTimeProvider();
 
-        var provider = new VaultConfigurationProvider(options, reader);
+        var provider = new VaultConfigurationProvider(options, reader, time);
         var loading = Task.Run(provider.Load);
 
         await Task.Delay(150);
@@ -208,12 +230,15 @@ public class CrashTests
 
         reader.Latency = TimeSpan.Zero;
         var afterDispose = reader.Attempts;
-        await Task.Delay(TimeSpan.FromSeconds(2.5));
+        time.Advance(TimeSpan.FromSeconds(3));
+        await Task.Delay(50);
 
         Assert.Equal(afterDispose, reader.Attempts);
     }
 
-    // A secret whose payload is an empty object must not wipe the section it maps to.
+    /// <summary>
+    /// A secret whose payload is an empty object must not wipe the section it maps to.
+    /// </summary>
     [Fact]
     public void Load_EmptyPayloadIsNotATotalLoss()
     {
@@ -224,7 +249,9 @@ public class CrashTests
         Assert.False(provider.TryGet("app", out _));
     }
 
-    // Two secrets aimed at the same section: the later one wins silently, which is worth knowing.
+    /// <summary>
+    /// Two secrets aimed at the same section: the later one wins silently, which is worth knowing.
+    /// </summary>
     [Fact]
     public void Load_TwoSecretsOnOneSectionResolveDeterministically()
     {

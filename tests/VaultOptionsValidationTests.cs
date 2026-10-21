@@ -1,4 +1,3 @@
-
 namespace Snail.Toolkit.HashiCorp.Vault.Tests;
 
 /// <summary>Options the provider refuses to start on.</summary>
@@ -46,7 +45,6 @@ public class VaultOptionsValidationTests
     /// Guards the rule rather than the cases: an interval option added later must be validated too,
     /// and this fails until it is.
     /// </summary>
-
     [Fact]
     public void Validate_EveryIntervalOptionIsChecked()
     {

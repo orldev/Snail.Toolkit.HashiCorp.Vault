@@ -53,7 +53,7 @@ builder.Configuration.AddVault(options =>
         "ConfigurationPrefix" : "Mongodb", // - optional: target section, "" for the root
         "MountPath" : "secret",          // - optional
         "Version" : 1,                   // - optional
-        "Keys" : ["Connection", "Database"] // - optional
+        "Keys" : ["Connection", "Database"] // - optional: the keys the application needs; a secret missing one fails the start
       }
     ]
   }
@@ -68,11 +68,12 @@ A value that itself carries JSON is unwrapped into nested sections, arrays inclu
 
 #### Behavior
 
-- The initial load retries inside the `LoadTimeoutSeconds` budget and then fails with a clear `TimeoutException`; `Optional: true` starts the application anyway.
+- The initial load retries inside the `LoadTimeoutSeconds` budget and then fails with a clear `TimeoutException`; `Optional: true` starts the application anyway. Only an absent server is waited out: a refused connection, a sealed or standing-by Vault, a proxy answering for one. A refused credential or policy, any other 4xx, fails at once with the refusal itself, `Optional` or not.
+- `Secrets` has to name at least one secret, and every key a secret's `Keys` names has to exist in it; a secret that lacks one fails the start rather than leaving a null behind.
 - `KeepExistingValues: true` registers the Vault source ahead of every other one, so appsettings, environment variables and the command line override it. Set it to `false` and Vault is registered last and wins. The precedence is the one `IConfiguration` already has — only `AddVault` places the source, so a source added by hand ignores the setting.
 - `Optional` covers an unreachable Vault, not a wrong configuration. A missing address, missing credentials or an interval below a second fail the start whatever it is set to, and so does a secret the server answers for but does not have.
 - With `ReloadCheckIntervalSeconds` set, the provider probes secret versions in the background, re-reads on change and raises the configuration reload token — `IOptionsMonitor<T>` sees rotations. An optional source that started without Vault picks the secrets up the same way.
-- The AppRole token is replaced before its lease runs out, so an expiry does not cost a failed request; a token refused anyway is renewed once and the request repeated, however many requests were refused together.
+- The AppRole token is replaced before its lease runs out, so an expiry does not cost a failed request; a token refused anyway is renewed once per lease and the request repeated, however many requests were refused together. A token refused again was never the problem, and the version probe never renews one: a read-only policy denies metadata, not the token.
 - A missing secret raises `SecretNotFoundException` right away — no pointless retries — and carries the path it was asked for together with the refusal that produced it.
 - The version probe reads metadata. Where the policy does not allow that, the probe is skipped and the secret is re-read in full rather than left frozen.
 - Connections are re-established every `ConnectionLifetimeSeconds`, so a Vault endpoint that moves behind a load balancer is noticed. `ConfigureTransport` on the options reaches the handler for a private certificate authority, a client certificate or a proxy.

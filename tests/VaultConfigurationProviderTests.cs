@@ -1,4 +1,5 @@
 global using Xunit;
+using Microsoft.Extensions.Time.Testing;
 using Snail.Toolkit.HashiCorp.Vault.Http;
 
 namespace Snail.Toolkit.HashiCorp.Vault.Tests;
@@ -158,7 +159,8 @@ public class VaultConfigurationProviderTests
 
     /// <summary>
     /// An answer of the wrong shape is the configuration's fault, not Vault being away, so Optional does not
-    /// hide it; a body that is not JSON at all is skipped, as it always was.
+    /// hide it; a body that is not JSON at all is a proxy answering for an absent Vault, retried within the
+    /// budget and then skipped.
     /// </summary>
     [Theory]
     [InlineData("""{"data": []}""", true)]
@@ -169,6 +171,8 @@ public class VaultConfigurationProviderTests
         var options = Options(new VaultSecret(Path: "mongo"));
         options.Token = "root";
         options.Optional = true;
+        options.LoadTimeoutSeconds = 1;
+        options.ReconnectIntervalSeconds = 1;
         using var reader = new VaultHttpClient(
             options, new HttpClient(new RecordingHandler(body: body)) { BaseAddress = new Uri("http://vault.local:8200/") });
         using var provider = new VaultConfigurationProvider(options, reader);
@@ -311,12 +315,14 @@ public class VaultConfigurationProviderTests
         options.LoadTimeoutSeconds = 1;
         options.ReconnectIntervalSeconds = 1;
         options.ReloadCheckIntervalSeconds = 1;
+        var time = new FakeTimeProvider();
 
-        var provider = new VaultConfigurationProvider(options, reader);
+        var provider = new VaultConfigurationProvider(options, reader, time);
         Assert.Throws<TimeoutException>(provider.Load);
 
         var afterFailure = reader.Attempts;
-        await Task.Delay(TimeSpan.FromSeconds(2.5));
+        time.Advance(TimeSpan.FromSeconds(3));
+        await Task.Delay(50);
 
         Assert.Equal(afterFailure, reader.Attempts);
     }
@@ -328,16 +334,23 @@ public class VaultConfigurationProviderTests
             .Set("mongo", 1, """{"Connection": "a"}""");
         var options = Options(new VaultSecret(Path: "mongo"));
         options.ReloadCheckIntervalSeconds = 1;
+        var time = new FakeTimeProvider();
 
-        var provider = Loaded(options, reader);
+        var provider = new VaultConfigurationProvider(options, reader, time);
+        provider.Load();
         provider.Dispose();
 
         var afterDispose = reader.VersionReads;
-        await Task.Delay(TimeSpan.FromSeconds(2.5));
+        time.Advance(TimeSpan.FromSeconds(3));
+        await Task.Delay(50);
 
         Assert.Equal(afterDispose, reader.VersionReads);
     }
 
+    /// <summary>
+    /// The interval is counted after the work finishes: ten seconds passing while a slow cycle is in flight
+    /// start no second one, and the next starts one interval after the slow one ended.
+    /// </summary>
     [Fact]
     public async Task Refresh_SlowReaderDoesNotOverlapTheNextCycle()
     {
@@ -345,10 +358,19 @@ public class VaultConfigurationProviderTests
             .Set("mongo", 1, """{"Connection": "a"}""");
         var options = Options(new VaultSecret(Path: "mongo"));
         options.ReloadCheckIntervalSeconds = 1;
+        var time = new FakeTimeProvider();
 
-        using var provider = Loaded(options, reader);
-        await Task.Delay(TimeSpan.FromSeconds(3));
+        using var provider = new VaultConfigurationProvider(options, reader, time);
+        provider.Load();
+        time.Advance(TimeSpan.FromSeconds(1));
+        time.Advance(TimeSpan.FromSeconds(10));
+        Assert.True(await Eventually.IsTrueAsync(() => reader.VersionReads == 1));
+        await Task.Delay(100);
 
-        Assert.InRange(reader.VersionReads, 1, 3);
+        Assert.Equal(1, reader.VersionReads);
+
+        time.Advance(TimeSpan.FromSeconds(1));
+
+        Assert.True(await Eventually.IsTrueAsync(() => reader.VersionReads == 2));
     }
 }

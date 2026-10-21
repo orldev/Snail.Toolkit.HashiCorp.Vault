@@ -35,7 +35,7 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
         var answer = await SendAuthorizedAsync(
             () => Get($"v1/{mountPath}/data/{path}")
                 .Query("version", secret.Version?.ToString(CultureInfo.InvariantCulture)),
-            VaultAnswers.Secret, secret.Path!, cancellationToken).ConfigureAwait(false);
+            VaultAnswers.Secret, secret.Path!, renewsOnRefusal: true, cancellationToken).ConfigureAwait(false);
 
         if (answer?.Content is not { Data: JsonObject payload } content)
             throw new InvalidOperationException($"Vault: the response for the secret '{path}' carries no data.");
@@ -46,14 +46,16 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
     /// <inheritdoc/>
     /// <remarks>
     /// Read into a record of the one field it needs, not into a tree of the whole answer with its
-    /// version history: the probe runs for every secret on every reload interval.
+    /// version history: the probe runs for every secret on every reload interval. A refused probe buys no
+    /// new token: metadata is the capability a read-only policy most often lacks, so its 403 is the policy's,
+    /// and the full read the provider falls back to renews a token that really died.
     /// </remarks>
     public async Task<int?> ReadSecretVersionAsync(VaultSecret secret, CancellationToken cancellationToken = default)
     {
         var (mountPath, path) = Locate(secret);
         var response = await SendAuthorizedAsync(
             () => Get($"v1/{mountPath}/metadata/{path}"),
-            VaultJson.Default.MetadataAnswer, secret.Path!, cancellationToken).ConfigureAwait(false);
+            VaultJson.Default.MetadataAnswer, secret.Path!, renewsOnRefusal: false, cancellationToken).ConfigureAwait(false);
 
         return response?.Metadata?.CurrentVersion;
     }
@@ -100,18 +102,22 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
     }
 
     private async Task<T?> SendAuthorizedAsync<T>(
-        Func<IHttpRequestBuilder> request, JsonTypeInfo<T> answer, string path, CancellationToken cancellationToken)
+        Func<IHttpRequestBuilder> request, JsonTypeInfo<T> answer, string path, bool renewsOnRefusal,
+        CancellationToken cancellationToken)
     {
-        var token = await GetTokenAsync(stale: null, cancellationToken).ConfigureAwait(false);
+        var token = await GetTokenAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
             return await ReadAsync(request, answer, token, path, cancellationToken).ConfigureAwait(false);
         }
         catch (HttpBuilderException ex) when (
-            ex.StatusCode == HttpStatusCode.Forbidden && string.IsNullOrEmpty(_options.Token))
+            renewsOnRefusal && ex.StatusCode == HttpStatusCode.Forbidden && string.IsNullOrEmpty(_options.Token))
         {
-            var renewed = await GetTokenAsync(token, cancellationToken).ConfigureAwait(false);
+            var renewed = await RenewRefusedAsync(token, cancellationToken).ConfigureAwait(false);
+
+            if (renewed is null)
+                throw;
 
             return await ReadAsync(request, answer, renewed, path, cancellationToken).ConfigureAwait(false);
         }
@@ -137,17 +143,17 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
         }
     }
 
-    /// <summary>Returns a usable token, logging in when the held one has run out or is the <paramref name="stale"/> one that was refused.</summary>
+    /// <summary>Returns a usable token, logging in when none is held or the held one has run out.</summary>
     /// <remarks>
-    /// Requests that were refused together must not each start a login: an AppRole with a limited
-    /// secret_id_num_uses would be spent by the duplicates and the role would lock out.
+    /// Requests that arrive together on an expired lease must not each start a login: an AppRole with a
+    /// limited secret_id_num_uses would be spent by the duplicates and the role would lock out.
     /// </remarks>
-    private async Task<string> GetTokenAsync(string? stale, CancellationToken cancellationToken)
+    private async Task<string> GetTokenAsync(CancellationToken cancellationToken)
     {
         if (!string.IsNullOrEmpty(_options.Token))
             return _options.Token;
 
-        if (stale is null && _lease is { } current && current.Expires > DateTimeOffset.UtcNow)
+        if (_lease is { } current && current.Expires > DateTimeOffset.UtcNow)
             return current.Token;
 
         await _login.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -155,11 +161,41 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
         {
             var lease = _lease;
 
-            if (lease is null || lease.Expires <= DateTimeOffset.UtcNow ||
-                string.Equals(lease.Token, stale, StringComparison.Ordinal))
+            if (lease is null || lease.Expires <= DateTimeOffset.UtcNow)
                 lease = _lease = await LoginAsync(cancellationToken).ConfigureAwait(false);
 
             return lease.Token;
+        }
+        finally
+        {
+            _login.Release();
+        }
+    }
+
+    /// <summary>Replaces the <paramref name="refused"/> token once per lease, and answers null when a refusal already did.</summary>
+    /// <remarks>
+    /// A 403 reads the same for a token that died before its lease said and for a policy that lacks the
+    /// path. One login tells them apart: a token that is refused again was never the problem, and a login
+    /// per refused request or per reload interval would fill Vault's token store and spend a secret_id's
+    /// uses on nothing. Requests refused together still share the one login, as they did.
+    /// </remarks>
+    private async Task<string?> RenewRefusedAsync(string refused, CancellationToken cancellationToken)
+    {
+        await _login.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var held = _lease;
+
+            if (held is not null && !string.Equals(held.Token, refused, StringComparison.Ordinal))
+                return held.Token;
+
+            if (held is { WasBoughtByARefusal: true })
+                return null;
+
+            var renewed = await LoginAsync(cancellationToken).ConfigureAwait(false);
+            _lease = renewed with { WasBoughtByARefusal = true };
+
+            return renewed.Token;
         }
         finally
         {
@@ -197,8 +233,8 @@ public sealed class VaultHttpClient : TypedHttpClientBase, IVaultReader, IDispos
             ? DateTimeOffset.MaxValue
             : DateTimeOffset.UtcNow.AddSeconds(leaseSeconds - Math.Min(leaseSeconds / 10.0, 60));
 
-    /// <summary>A token and the moment it stops being usable, kept together so they cannot disagree.</summary>
-    private sealed record Lease(string Token, DateTimeOffset Expires);
+    /// <summary>A token, the moment it stops being usable and whether a refusal already bought it, kept together so they cannot disagree.</summary>
+    private sealed record Lease(string Token, DateTimeOffset Expires, bool WasBoughtByARefusal = false);
 
     private static HttpClient CreateClient(VaultOptions options)
     {

@@ -1,14 +1,12 @@
 <Project Sdk="Snail.Sdk.Library">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
         <PackageId>Snail.Toolkit.HashiCorp.Vault</PackageId>
         <PackageTags>HashiCorp;Vault;Configuration;Secrets;AppRole</PackageTags>
         <Title>Snail.Toolkit.HashiCorp.Vault</Title>
         <Authors>Toolkit</Authors>
         <Description>HashiCorp Vault KV v2 secrets as a .NET IConfiguration source: AppRole or token authentication, per-secret configuration sections, background reload.</Description>
         <Copyright>Toolkit, 2023</Copyright>
-        <RepositoryUrl>https://github.com/orldev/Snail.Toolkit.HashiCorp.Vault</RepositoryUrl>
         <PackageProjectUrl>https://github.com/orldev/Snail.Toolkit.HashiCorp.Vault</PackageProjectUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
