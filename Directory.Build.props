@@ -5,8 +5,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <RepositoryUrl>https://github.com/orldev/Snail.Toolkit.HashiCorp.Vault</RepositoryUrl>
     <!-- The last release on NuGet: a pack fails on any change that would break a user of it. Raised with each release. -->
-    <SnailPackageBaseline>0.2.0</SnailPackageBaseline>
-    <!-- The releases up to 0.2.0 carried assembly version 1.0.0.0: a lower one breaks every user built against them (CP0003). -->
+    <SnailPackageBaseline>0.3.0</SnailPackageBaseline>
+    <!-- The releases up to 0.3.0 carried assembly version 1.0.0.0: a lower one breaks every user built against them (CP0003). -->
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </PropertyGroup>
 
