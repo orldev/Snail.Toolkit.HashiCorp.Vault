@@ -1,4 +1,4 @@
-## HashiCorp Vault
+# Snail.Toolkit.HashiCorp.Vault
 
 HashiCorp Vault KV v2 secrets as a .NET `IConfiguration` source: AppRole or token authentication, per-secret configuration sections, background reload. Talks to the Vault HTTP API directly — no VaultSharp dependency.
 

@@ -6,7 +6,7 @@
   <ItemGroup Label="Runtime">
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.11" />
-    <PackageVersion Include="Snail.Toolkit.HttpBuilder.Extensions" Version="0.4.0-local.1" />
+    <PackageVersion Include="Snail.Toolkit.HttpBuilder.Extensions" Version="0.4.0" />
   </ItemGroup>
   <ItemGroup Label="Testing">
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
